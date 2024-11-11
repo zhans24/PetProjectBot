@@ -1,10 +1,11 @@
 const TelegramAPI = require('node-telegram-bot-api')
-const {add:add, findById,deleteById, updateById}=require('./Repo')
-let { addedButton, startKeyboard, createDayKeyboard, backToCreate, backToMenu } = require('./InlineKeyboard');const token = "6993703742:AAGZLadrxQNeCqF_ZURg5O9Cl-CcClgTv6k"
+const {add:add, findById,deleteById, updateById}=require('./Database/Repo')
+let { addedButton, startKeyboard, createDayKeyboard, backToCreate, backToMenu } = require('./Helpers/InlineKeyboards');const token = "6993703742:AAGZLadrxQNeCqF_ZURg5O9Cl-CcClgTv6k"
+
+const {safeEditMessageText,addText,show} = require('./Helpers/Functions');
 
 const bot = new TelegramAPI(token,{polling: true})
 
-const days = [0,1,2,3,4,5];
 const daysName = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
 
 const userStatus={}
@@ -15,7 +16,7 @@ bot.setMyCommands([
     {command:'/help',description:"Info"}
 ])
 
-
+let day=-1;
 
 bot.on("message", async message => {
     let text = message.text;
@@ -35,104 +36,49 @@ bot.on("message", async message => {
     }
 })
 
-let day=-1;
-
 
 bot.on("callback_query", async query => {
-    console.log(query.data);
+    try {
+        console.log(query.data);
+        let chatId = query.message.chat.id;
+        let messageId = query.message.message_id;
 
-    let chatId=query.message.chat.id;
-    let messageId=query.message.message_id;
-
-    if (query.data === "Show") {
-        return show(chatId,messageId)
-    }
-
-    if (query.data==="Drop"){
-        for (let i = 0; i < 6; i++) {
-            await deleteById(chatId, i);
+        if (query.data === "Show") {
+            await show(bot,chatId, messageId)
         }
-        await bot.editMessageText("Расписание удалено",{
-            chat_id: chatId,
-            message_id: messageId,
-            reply_markup:backToMenu.reply_markup
-        })
+
+        if (query.data === "Drop") {
+            for (let i = 0; i < 6; i++) {
+                await deleteById(chatId, i);
+            }
+            await safeEditMessageText(bot,"Расписание удалено",chatId,messageId, backToMenu.reply_markup)
+        }
+
+        if (query.data === "backToMenu") {
+            await safeEditMessageText(bot,'Привет ' + query.message.chat.first_name, chatId,messageId,startKeyboard.reply_markup)
+        }
+
+        if (query.data === "Create" || query.data === "backToCreate") {
+            const text = "Выбери день и заполни :";
+            await safeEditMessageText(bot,text, chatId, messageId, (await createDayKeyboard(chatId)).reply_markup)
+        }
+
+
+        if (daysName.includes(query.data)) {
+            day = daysName.indexOf(query.data)
+            await addText(bot,chatId, messageId,userStatus);
+        }
+    }catch (error){
+        console.log(error);
     }
-
-    if (query.data==="backToMenu"){
-            await bot.editMessageText('Привет '+query.message.chat.first_name, {
-            chat_id: chatId,
-            message_id: messageId,
-            reply_markup: startKeyboard.reply_markup
-        });
-    }
-
-    if (query.data==="Create" || query.data==="backToCreate") {
-        await bot.editMessageText("Выбери день и заполни :", {
-            chat_id: chatId,
-            message_id: messageId,
-            reply_markup: (await createDayKeyboard(chatId)).reply_markup,
-        })
-    }
-
-
-    if (daysName.includes(query.data)) {
-        day=daysName.indexOf(query.data)
-        await addText(chatId, messageId);
-    }
-
-
-
 })
 
-/*
-    Add lessons part
- */
-async function addText(chatId, messageId) {
-    userStatus[chatId]="add";
-    await bot.editMessageText("Напишите занятия в ряд с пробелом\n\n<b>Вот так</b> : <i>Первый второй третий ...</i>", {
-        chat_id: chatId,
-        message_id: messageId,
-        parse_mode:"HTML",
-        reply_markup: backToCreate.reply_markup
-    });
-}
-
-
-async function show(chatId,messageId) {
-
-    let allLessons = '';
-    let lessonPromises = days.map(index => findById(chatId, index));
-
-    try {
-        const lessonsResults = await Promise.all(lessonPromises);
-        daysName.forEach((day, index) => {
-            allLessons += `${day}: ${lessonsResults[index]?.length > 0 ? lessonsResults[index].join(', ') : 'No lessons'}\n`;
-        });
-    } catch (error) {
-        console.error('Error fetching lessons:', error);
-        allLessons = 'Error fetching lessons from the database.';
-    }
-
-    return await bot.editMessageText(`Расписание на всю неделю:\n${allLessons}`, {
-        chat_id: chatId,
-        message_id: messageId,
-        reply_markup: {
-            inline_keyboard: [
-                [{text: "Удалить всё", callback_data: "Drop"}],
-                [{text: "Назад", callback_data: "backToMenu"}]
-            ]
-        }
-    });
-}
-
-/*
-  Add lessons to db
- */
 
 bot.on('message', async message => {
     const chatId = message.chat.id;
     let lessons=message.text.split(" ");
+
+    console.log(userStatus)
 
     let text=""
     let count=1;
