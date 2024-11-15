@@ -1,9 +1,22 @@
-const {findById} = require("../Database/Repo");
+const {findById} = require("../Database/RepoDays");
+
+
+
 const startKeyboard = {
     reply_markup: {
         inline_keyboard: [
-            [{text:"Создать расписание",callback_data:"Create"}],
+            [{text:"Расписание",callback_data: "Schedule"}],
+            [{text: "Параметры",callback_data:"Settings"}]
+        ]
+    }
+}
+
+const scheduleKeyboard = {
+    reply_markup: {
+        inline_keyboard: [
+            [{text:"Добавить расписание",callback_data:"Create"}],
             [{text:"Показать расписание",callback_data:"Show"}],
+            [{text:"Назад",callback_data:"backToMenu"}]
         ]
     }
 }
@@ -37,7 +50,7 @@ const createDayKeyboard = async (chatId) => {
                     { text: `3.Среда ${savedDaysStatus[2] ? '✅' : ''}`, callback_data: "Ср" },
                     { text: `6.Суббота ${savedDaysStatus[5] ? '✅' : ''}`, callback_data: "Сб" }
                 ],
-                [{ text: "Назад", callback_data: "backToMenu" }]
+                [{ text: "Назад", callback_data: "backToSchedule" }]
             ]
         }
     };
@@ -61,6 +74,14 @@ const backToCreate = {
     }
 }
 
+const backToSchedule = {
+    reply_markup: {
+        inline_keyboard: [
+            [{text:"Назад",callback_data:"backToSchedule"}],
+        ]
+    }
+}
+
 const backToMenu = {
     reply_markup: {
         inline_keyboard: [[{
@@ -70,6 +91,15 @@ const backToMenu = {
     }
 }
 
+const timeKeyboard = {
+    reply_markup: {
+        inline_keyboard: [
+            [{text:"18:00",callback_data:"18:00"},{text:"21:00",callback_data:"21:00"},{text:"00:00",callback_data:"00:00"}],
+            [{text: "Другое время",callback_data: "otherTime"}],
+            [{text:"Назад",callback_data: "backToMenu"}]
+        ]
+    }
+}
 
 
 module.exports = {
@@ -77,5 +107,7 @@ module.exports = {
     addedButton,
     backToCreate,
     backToMenu,
-    createDayKeyboard
+    createDayKeyboard,
+    timeKeyboard,
+    scheduleKeyboard
 };

@@ -1,3 +1,7 @@
-let s="zhs"
-s[s.length-1]=" "
-console.log(s)
+let x={
+}
+
+x[2]="s"
+x[3]="a"
+
+console.log(Object.keys(x))

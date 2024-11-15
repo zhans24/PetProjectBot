@@ -1,5 +1,6 @@
 const {backToCreate} = require("./InlineKeyboards");
-const {findById} = require("../Database/Repo");
+const {findById} = require("../Database/RepoDays");
+const cron = require("node-cron");
 
 const days = [0,1,2,3,4,5];
 const daysName = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
@@ -51,10 +52,38 @@ async function show(bot,chatId,messageId) {
     await safeEditMessageText(bot,`Расписание на всю неделю:\n<b>${allLessons}</b>`, chatId,messageId,{
         inline_keyboard: [
             [{text: "Удалить всё", callback_data: "Drop"}],
-            [{text: "Назад", callback_data: "backToMenu"}]
+            [{text: "Назад", callback_data: "backToSchedule"}]
         ]
     });
 }
 
+const timeStorage = {}
 
-module.exports={safeEditMessageText,show,addText}
+async function setTime(bot, chatId, time) {
+    let [hours,minutes]=time.split(":")
+
+    let tomorrow = new Date().getDay() + 1;
+    if (tomorrow === 7) return bot.sendMessage(chatId, "Завтра <b>воскресенье</b> отдыхай!🔥", {
+        parse_mode: "HTML"
+    });
+
+    let text = ""
+    for (const lessons of (await findById(chatId, tomorrow - 1))) {
+        text += `${lessons}\n`
+    }
+
+    if (timeStorage[chatId]){
+        timeStorage[chatId].stop();
+        console.log(`time changed to ${hours}:${minutes}`);
+    }
+
+    timeStorage[chatId]=cron.schedule(`*/5 * * * * *`, () => {
+        console.log(`Time set on ${hours}:${minutes}`)
+
+        bot.sendMessage(message.chat.id, `Завтра <i>${daysOfWeek[tomorrow]}</i>:\n${(text.length === 0) ? "<B>Не заполнено</B>" : text}`,
+            {
+                parse_mode: "HTML"
+            })
+    })
+}
+module.exports={safeEditMessageText,show,addText,setTime}

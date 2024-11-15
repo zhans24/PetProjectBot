@@ -5,11 +5,10 @@ const days=[Monday,Tuesday,Wednesday,Thursday,Friday,Saturday]
 const add = async (chatid,lessons,day) => {
     const newLesson = new days[day]({
         _id:chatid,
-        lessons: lessons,
+        lessons: lessons
     })
     try {
-        const savedEvent = await newLesson.save();
-        console.log(`Lessons added :`, savedEvent);
+        await newLesson.save();
     } catch (error) {
         console.error(error);
     }
@@ -28,7 +27,7 @@ const findById = async (id, day) => {
 
 const deleteById = async (id,day) => {
     try {
-        if (findById(id,day)!==null) {
+        if (await findById(id, day)!==null) {
             await days[day].deleteOne({_id: id,});
         }
     }catch (error) {
