@@ -90,6 +90,15 @@ const backToMenu = {
         }]]
     }
 }
+const empty = {
+    reply_markup: {
+        inline_keyboard: [
+            [{text:"вввв",callback_data:"Empty"}],
+        ]
+    }
+}
+
+
 
 const timeKeyboard = {
     reply_markup: {
@@ -109,5 +118,6 @@ module.exports = {
     backToMenu,
     createDayKeyboard,
     timeKeyboard,
-    scheduleKeyboard
+    scheduleKeyboard,
+    empty
 };

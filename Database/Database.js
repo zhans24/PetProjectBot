@@ -67,7 +67,7 @@ const Wednesday = mongoose.model('Wednesday',wednesdaySchema);
 const Thursday = mongoose.model('Thursday',thursdaySchema);
 const Friday = mongoose.model('Friday',fridaySchema);
 const Saturday = mongoose.model('Saturday',saturdaySchema);
-const time=mongoose.model('Time',timeSchema);
+const Time=mongoose.model('Time',timeSchema);
 
 
-module.exports={Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,time}
+module.exports={Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Time}

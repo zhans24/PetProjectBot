@@ -17,7 +17,12 @@ const add = async (chatid,lessons,day) => {
 const findById = async (id, day) => {
     try {
         const doc = await days[day].findOne({ _id: id });
-        return doc ? doc.lessons : [];
+        if (doc) {
+            console.log(`${id} got ${doc.lessons}`)
+            return doc.lessons;
+        }else{
+            return [];
+        };
     } catch (error) {
         console.error(error);
         return [];
@@ -37,13 +42,11 @@ const deleteById = async (id,day) => {
 
 const updateById = async (id, day,updatelessons) => {
     try {
-        const updated=await days[day].updateOne({_id: id},{$set:{lessons:updatelessons}});
-        console.log("Updated:"+updated)
+        await days[day].updateOne({_id: id},{$set:{lessons:updatelessons}});
     }catch (error){
         console.error(error);
     }
 }
-
 
 module.exports={findById,add,deleteById,updateById}
 

@@ -1,8 +1,11 @@
 const TelegramAPI = require('node-telegram-bot-api')
 const {add:add, findById,deleteById, updateById}=require('./Database/RepoDays')
-const { addedButton, startKeyboard, createDayKeyboard, timeKeyboard, scheduleKeyboard, backToCreate, backToMenu} = require('./Helpers/InlineKeyboards');const token = "6993703742:AAGZLadrxQNeCqF_ZURg5O9Cl-CcClgTv6k"
-const {safeEditMessageText,addText,show, setTime} = require('./Helpers/Functions');
-const cron = require('node-cron');
+const { addedButton, startKeyboard, createDayKeyboard, timeKeyboard, scheduleKeyboard, backToCreate, backToMenu, empty} = require('./Helpers/InlineKeyboards');
+const token = "6993703742:AAGZLadrxQNeCqF_ZURg5O9Cl-CcClgTv6k"
+const {safeEditMessageText,addText,show} = require('./Helpers/Functions');
+const cron = require("node-cron");
+
+const {addTime,deleteTime,findTime,updateTime}=require('./Database/RepoTime')
 
 const bot = new TelegramAPI(token,{polling: true})
 
@@ -17,10 +20,6 @@ bot.setMyCommands([
     {command:'/help',description:"Info"}
 ])
 
-let time='21:00';
-
-
-
 bot.on("message", async message => {
     let text = message.text;
     let chatId = message.chat.id;
@@ -34,8 +33,10 @@ bot.on("message", async message => {
     else if (text === '/help') {
         return bot.sendMessage(chatId, '/start - запуск бота\n\nЕсли есть другие вопросы напишите : @gazizhasik')
     }
+    else if (text==='/message'){
+        return bot.sendMessage(chatId,JSON.stringify(message,null,4))
+    }
 })
-
 
 
 bot.on("callback_query", async query => {
@@ -81,17 +82,17 @@ bot.on("callback_query", async query => {
         }
 
         if (query.data==="otherTime"){
-            await bot.answerCallbackQuery(query.id, {
-                text: "Еще в разработке,почти готово!",
-                show_alert: true
-            })
+            userStatus[chatId]="time"
+            text="Напишите время в которое бот будет отправлять завтрашнее расписание\n<i>Вот так: <u>21:00</u></i>"
+            await safeEditMessageText(bot,text,chatId,messageId);
+            setTimeout(()=>{
+                bot.deleteMessage(chatId,messageId)
+            },10_000)
         }
 
         if (times.includes(query.data)){
-            time=query.data
-            await setTime(bot, chatId, time)
+            await addTime(chatId,query.data);
             await safeEditMessageText(bot,"Время установлено✅", chatId,messageId,backToMenu.reply_markup)
-
         }
     }catch (error){
         console.log(error);
@@ -101,16 +102,28 @@ bot.on("callback_query", async query => {
 
 bot.on('message', async message => {
     const chatId = message.chat.id;
-    let lessons=message.text.split(" ");
+    const messageId=message.message_id;
 
-    let text=""
-    let count=1;
-    for (let element of lessons) {
-        text+=`${count}.${element}\n`;
-        count++;
+
+    if (userStatus[chatId]==="time"){
+        userStatus[chatId]="start";
+        await addTime(chatId, message.text)
+        await bot.sendMessage(chatId,"Время установлено✅",backToMenu)
+        setTimeout(()=>{
+            bot.deleteMessage(chatId,messageId)
+        },2_000)
     }
 
     if (userStatus[chatId]==="add") {
+        let lessons=message.text.split(" ");
+
+        let text=""
+        let count=1;
+        for (let element of lessons) {
+            text+=`${count}.${element}\n`;
+            count++;
+        }
+
         userStatus[chatId] = "start";
 
         const checkDay=await findById(chatId, userDayToAdd[chatId]);
@@ -135,5 +148,38 @@ bot.on('message', async message => {
             parse_mode:"HTML",
             reply_markup:addedButton.reply_markup
         });
+    }
+})
+
+
+
+cron.schedule('* * * * *',async () => {
+    let minutes=String(new Date().getMinutes()).padStart(2,'0');
+    let hours=String(new Date().getHours()).padStart(2,'0');
+    let tomorrow = new Date().getDay() + 1;
+
+    let currTime=`${hours}:${minutes}`;
+    const daysOfWeek = ["воскресенье", "понедельник", "вторник", "среда", "четверг", "пятница", "суббота"];
+
+    let users=await findTime(currTime)
+    if (users.length>0) {
+        users.forEach(user => {
+            let chatId = Number(user._id)
+            if (tomorrow !== 7) {
+                let text = ""
+                for (const lessons of (findById(chatId, tomorrow - 1))) {
+                    text += `${lessons}\n`
+                }
+
+                bot.sendMessage(chatId, `Завтра <i>${daysOfWeek[tomorrow]}</i>:\n${(text.length === 0) ? "<B>Не заполнено</B>" : text}`,
+                    {
+                        parse_mode: "HTML"
+                    })
+            } else {
+                bot.sendMessage(chatId, "Завтра <b>воскресенье</b> отдыхай!🔥", {
+                    parse_mode: "HTML"
+                });
+            }
+        })
     }
 })
