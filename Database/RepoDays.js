@@ -18,11 +18,10 @@ const findById = async (id, day) => {
     try {
         const doc = await days[day].findOne({ _id: id });
         if (doc) {
-            console.log(`${id} got ${doc.lessons}`)
             return doc.lessons;
         }else{
             return [];
-        };
+        }
     } catch (error) {
         console.error(error);
         return [];

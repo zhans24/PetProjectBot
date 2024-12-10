@@ -6,7 +6,7 @@ const startKeyboard = {
     reply_markup: {
         inline_keyboard: [
             [{text:"Расписание",callback_data: "Schedule"}],
-            [{text: "Параметры",callback_data:"Settings"}]
+            [{text: "⚙️",callback_data:"Settings"}]
         ]
     }
 }
@@ -59,6 +59,7 @@ const createDayKeyboard = async (chatId) => {
 const addedButton = {
     reply_markup: {
         inline_keyboard: [
+            [{text: "Изменить✏️",callback_data: "updateDay"}],
             [{text:"Другие дни",callback_data:"backToCreate"}],
             [{text:"Показать расписание",callback_data:"Show"}]
         ]
@@ -90,16 +91,6 @@ const backToMenu = {
         }]]
     }
 }
-const empty = {
-    reply_markup: {
-        inline_keyboard: [
-            [{text:"вввв",callback_data:"Empty"}],
-        ]
-    }
-}
-
-
-
 const timeKeyboard = {
     reply_markup: {
         inline_keyboard: [
@@ -119,5 +110,4 @@ module.exports = {
     createDayKeyboard,
     timeKeyboard,
     scheduleKeyboard,
-    empty
 };

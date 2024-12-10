@@ -1,6 +1,8 @@
 const {backToCreate} = require("./InlineKeyboards");
 const {findById} = require("../Database/RepoDays");
 const cron = require("node-cron");
+const {findTime, findByIdTime} = require("../Database/RepoTime");
+const e = require("express");
 
 const days = [0,1,2,3,4,5];
 const daysName = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
@@ -30,7 +32,7 @@ async function safeEditMessageText(bot, text, chatId, messageId, form) {
 
 async function addText(bot,chatId, messageId,userStatus) {
     userStatus[chatId]="add";
-    await bot.editMessageText("Напишите занятия в ряд с пробелом\n\n<b>Вот так</b> : <i>Первый второй третий ...</i>", {
+    await bot.editMessageText("Напишите занятия с запятой\n\n<b>Вот так</b> : <i>Дело 1 <b>16:00</b>, Дело 2, Дело 3 ...</i>", {
         chat_id: chatId,
         message_id: messageId,
         parse_mode:"HTML",
@@ -38,16 +40,27 @@ async function addText(bot,chatId, messageId,userStatus) {
     });
 }
 
+
 async function show(bot,chatId,messageId) {
 
     let allLessons = '';
     let lessonPromises = days.map(index => findById(chatId, index));
-
     try {
         const lessonsResults = await Promise.all(lessonPromises);
-        daysName.forEach((day, index) => {
-            allLessons += `${day}: ${lessonsResults[index]?.length > 0 ? lessonsResults[index].join(', ') : ' <b>Не заполнено</b>'}\n`;
-        });
+        let count=1;
+        for (const day in daysName) {
+            allLessons += `${daysName[day]}:`;
+            if (lessonsResults[day]?.length>0) {
+                allLessons+="\n"
+                for (const lesson of lessonsResults[day]) {
+                    allLessons += `   <b>${count}.</b>${lesson}\n`;
+                    count++;
+                }
+                count=1;
+            }else {
+                allLessons += "<b>Не заполнено\n</b>";
+            }
+        }
     } catch (error) {
         console.error('Ошибка БД:', error);
         allLessons = 'ОШИБКА В БД!';
@@ -61,18 +74,5 @@ async function show(bot,chatId,messageId) {
     });
 }
 
-const timeStorage = {}
 
-async function setTime(bot, chatId, time) {
-    let [hours,minutes]=time.split(":")
-
-    if (timeStorage[chatId]){
-        timeStorage[chatId].stop();
-    }
-
-    timeStorage[chatId]=cron.schedule(`${minutes} ${hours} * * *`, async () => {
-
-
-    })
-}
 module.exports={safeEditMessageText,show,addText}
