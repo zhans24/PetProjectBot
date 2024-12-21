@@ -45,6 +45,8 @@ bot.on("callback_query", async query => {
         let chatId = query.message.chat.id;
         let messageId = query.message.message_id;
 
+        userStatus[chatId]="start"
+
         if (query.data === "Show") {
             await show(bot,chatId, messageId)
         }
@@ -111,6 +113,11 @@ bot.on("callback_query", async query => {
             }
             text+="\n<b>Напишите заново занятия с запятой:</b>"
             await safeEditMessageText(bot,text,chatId,messageId,backToCreate.reply_markup);
+        }
+        else if (query.data==="Start"){
+            userStatus[chatId]="start"
+            userDayToAdd[chatId]=-1
+            return bot.sendMessage(chatId, `Привет ${query.message.chat.first_name} 👋`, startKeyboard)
         }
     }catch (error){
         console.log(error);
@@ -199,6 +206,11 @@ cron.schedule('* * * * *',async () => {
 
                     bot.sendMessage(chatId, `Завтра:\n${text.length === 0 ? "<b>Не заполнено</b>" : text}`, {
                         parse_mode: "HTML",
+                        reply_markup: {
+                            inline_keyboard:[
+                                [{text:"Расписание",callback_data:"Start"}]
+                            ]
+                        }
                     });
                 })
                 .catch(error => {

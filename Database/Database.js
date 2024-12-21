@@ -1,4 +1,4 @@
-MONGO_URL="mongodb://localhost:27017/Schedule";
+const MONGO_URL = "mongodb+srv://zhasikgaziz:Zhasik24@cluster0.y9wrt.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 
 const mongoose = require('mongoose');
 
