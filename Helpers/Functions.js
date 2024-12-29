@@ -41,38 +41,68 @@ async function addText(bot,chatId, messageId,userStatus) {
 }
 
 
-async function show(bot,chatId,messageId) {
-
+async function showLessons(bot, chatId) {
     let allLessons = '';
     let lessonPromises = days.map(index => findById(chatId, index));
+
+    const colors = ["📘", "📕", "📗", "📙", "📓", "📔"];
+
     try {
         const lessonsResults = await Promise.all(lessonPromises);
-        let count=1;
+        let count = 1;
+
         for (const day in daysName) {
-            allLessons += `${daysName[day]}:`;
-            if (lessonsResults[day]?.length>0) {
-                allLessons+="\n"
+            const colorIndex = day % colors.length;
+            allLessons += `${colors[colorIndex]} <b>${daysName[day]}:</b>\n`;
+
+            if (lessonsResults[day]?.length > 0) {
                 for (const lesson of lessonsResults[day]) {
-                    allLessons += `   <b>${count}.</b>${lesson}\n`;
+                    allLessons += `   <b>${count}.</b> ${lesson}\n`;
                     count++;
                 }
-                count=1;
-            }else {
-                allLessons += "<b>Не заполнено\n</b>";
+                count = 1;
+            } else {
+                allLessons += "   <b>Не заполнено</b>\n";
             }
+            allLessons+="\n"
         }
+        return allLessons;
     } catch (error) {
         console.error('Ошибка БД:', error);
-        allLessons = 'ОШИБКА В БД!';
     }
+}
 
-    await safeEditMessageText(bot,`Расписание на всю неделю:\n<b>${allLessons}</b>`, chatId,messageId,{
-        inline_keyboard: [
-            [{text: "Удалить всё", callback_data: "Drop"}],
-            [{text: "Назад", callback_data: "backToSchedule"}]
-        ]
-    });
+async function findTomorrow(bot,chatId){
+    let tomorrow = new Date().getDay() + 1;
+
+    if (tomorrow !== 7) {
+        findById(chatId, tomorrow - 1)
+            .then(lessons => {
+                let text = "";
+                for (const lesson of lessons) {
+                    text += `${lesson}\n`;
+                }
+
+                bot.sendMessage(chatId, `Завтра:\n${text.length === 0 ? "<b>Не заполнено</b>" : text}`, {
+                    parse_mode: "HTML",
+                    reply_markup: {
+                        inline_keyboard:[
+                            [{text:"Расписание",callback_data:"Start"}]
+                        ]
+                    }
+                });
+            })
+            .catch(error => {
+                console.error("Ошибка при получении уроков:", error);
+                bot.sendMessage(chatId, "Произошла ошибка при получении расписания.");
+            });
+
+    } else {
+        await bot.sendMessage(chatId, "Завтра <b>воскресенье</b> отдыхай!🔥", {
+            parse_mode: "HTML"
+        });
+    }
 }
 
 
-module.exports={safeEditMessageText,show,addText}
+module.exports={safeEditMessageText,showLessons,addText,findTomorrow}
